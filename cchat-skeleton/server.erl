@@ -2,9 +2,6 @@
 -export([start/1,stop/1]).
 
 
-%HELLO!
-
-%hellu
 % Start a new server process with the given name
 % Do not change the signature of this function.
 start(ServerAtom) ->
