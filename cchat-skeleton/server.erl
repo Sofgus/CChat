@@ -2,10 +2,7 @@
 -export([start/1,stop/1]).
 
 
-% -- Testar bara git --
-% -- La till en till rad --
-% -- la till denna till rad innan jag pushade min commit --
-% -- en git diff kanske --
+
 
 
 % Start a new server process with the given name
