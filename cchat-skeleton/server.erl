@@ -8,11 +8,27 @@
 % Start a new server process with the given name
 % Do not change the signature of this function.
 start(ServerAtom) ->
+    Pid = spawn(fun() -> loop() end),
+    register(ServerAtom, Pid),
+    Pid.
     % TODO Implement function
     % - Spawn a new process which waits for a message, handles it, then loops infinitely
     % - Register this process to ServerAtom
     % - Return the process ID
-    not_implemented.
+    loop() ->
+    receive
+        {Join, From, Ref} ->
+            {ok, joined};
+
+
+        {Leave, From, Ref} ->
+            {ok, left};
+
+
+        {SendMsg, From, Ref} ->
+            {ok, msgSent}
+    end.
+
 
 % Stop the server process registered to the given name,
 % together with any other associated processes
