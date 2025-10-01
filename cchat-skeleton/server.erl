@@ -15,18 +15,20 @@ start(ServerAtom) ->
     % - Spawn a new process which waits for a message, handles it, then loops infinitely
     % - Register this process to ServerAtom
     % - Return the process ID
-    loop() ->
+loop() ->
     receive
-        {Join, From, Ref} ->
-            {ok, joined};
+        {Join, From} ->
+            From ! {ok, joined},
+            loop();
 
 
-        {Leave, From, Ref} ->
-            {ok, left};
+        {Leave, From} ->
+            From ! {ok, left},
+            loop();
 
-
-        {SendMsg, From, Ref} ->
-            {ok, msgSent}
+        {SendMsg, From} ->
+            From ! {ok, msgSent},
+            loop()
     end.
 
 
@@ -36,3 +38,7 @@ stop(ServerAtom) ->
     % TODO Implement function
     % Return ok
     not_implemented.
+
+
+default_handler(State, _Request) ->
+    {reply, ok, State}.
