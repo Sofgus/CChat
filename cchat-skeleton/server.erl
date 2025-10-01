@@ -53,7 +53,7 @@ loop(State, Handler) ->
 stop(ServerAtom) ->
     % TODO Implement function
     % Return ok
-    genserver:stop(ServerAtom).
+    
 
 
 
