@@ -6,7 +6,7 @@
 -record(server_st, {
     channels % a list of {Channel, [Clients]}
 }).
-
+% OBS! Se till att det verkligen är en lista av tuples!
 
 % Initializing the state to just an empty list. 
 % Later to be filled with channels and the clients belonging to the respective channel
