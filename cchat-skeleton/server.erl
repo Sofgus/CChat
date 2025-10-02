@@ -1,5 +1,5 @@
 -module(server).
--export([start/1,stop/1,handler/2]).
+-export([start/1,stop/1,handler/3]).
 
 
 % Record syntax for the structure of the servers state
@@ -24,7 +24,7 @@ start(ServerAtom) ->
     % - Register this process to ServerAtom
     % - Return the process ID
     InitState = init_state(),
-    Pid = spawn(fun() -> loop(InitState, fun server:handler/2) end),
+    Pid = spawn(fun() -> loop(InitState, fun server:handler/3) end),
     register(ServerAtom, Pid),
     Pid.
 % OBS jag tror inte State är nånting just nu? eller är det InitState verkligen?
@@ -38,7 +38,11 @@ loop(State, Handler) ->
                 % "if" we get {response, NewState}..
                 {response, ok, NewState} ->
                     % sends message back to the client.erl handler and restarts loop.
-                    From ! {reply, Ref},
+                    From ! {reply, Ref, ok},
+                    loop(NewState, Handler)
+
+                {response, {error, Reason}, NewState} ->
+                    From ! {reply, Ref, {error, Reason}},
                     loop(NewState, Handler)
             end;
 
@@ -60,53 +64,14 @@ stop(ServerAtom) ->
 
 
 
-% Join channel 
+% Join channel handler
 handler(State, {join, Channel}, From) ->
-    NewState = existChannel(Channel, State, From),
-    {reply, ok, NewState}.
-
-% Leave channel
-handler(State, {leave, Channel}, From) ->
-    case lists:keyfind(Channel, 1, State#server_st.channels) of
-        false ->
-            undefined;
-        {value, {ChName, Lst}} ->
-            case lists:member(From, Lst) of
-                false -> 
-                    user_not_joined;
-                true -> 
-                    NewLst = lists:delete(From, Lst),
-                    NewChannels = 
-                        lists:keyreplace(Channel, 1, 
-                                        State#server_st.channels, 
-                                        {ChName, NewLst}),
-                    NewState = State#server_st{ channels = NewChannels } 
-            end
+    case existChannel(Channel, State, From) of
+        {error, Reason} ->
+            {response, {error, Reason}, State};
+        NewState -> 
+            {response, ok, NewState}
     end.
-
-
-
-% Send msg
-handler(State, {message_send, Channel, Msg}, From) ->
-    case lists:keyfind(Channel, 1, State#server_st.channels) of
-    false ->
-        undefined;
-    {value, {ChName, Lst}} ->
-        [send_message(H, Channel, From, Msg) || H <- Lst, H =/= From]
-    end
-        {reply, okMsgSend, State}. 
-
-
-
-
-
-% For everything else
-handler(State, _) ->
-        {reply, {error, unknown_command}, State}. 
-
-
-
-
 
 % helper function, checks if channels exists in the list. Returns true or false.
 existChannel(Key, State, From) ->
@@ -130,30 +95,94 @@ createChannel(Key, State, From) ->
 joinChannel(Key, State, From) -> 
     case lists:keyfind(Key, 1, State#server_st.channels) of
         false -> 
-            undefined; 
+            {error, no_such_channel}; 
+
         {value, {ChName, Lst}} -> 
             case lists:member(From, Lst) of
                 true -> 
-                    user_already_joined;
+                    {error, user_already_joined};
                 false -> 
                     NewChannels = 
                         lists:keyreplace(Key, 1, 
                                         State#server_st.channels, 
-                                        {ChName, From | Lst}),
+                                        {ChName, [From | Lst]}),
 
                     NewState = State#server_st{ channels = NewChannels }
             end
     end.
 
 
+% Leave Channel handler
+handler(State, {leave, Channel}, From) ->
+    case leaveChannel(State, Channel, From) of
+        {error, Reason} ->
+            {response, {error, Reason}, State};
+        NewState -> 
+            {response, ok, NewState}
+    end.
 
 
 
+% Helper function for Leave Channel
+leaveChannel(State, Channel, From) ->
+    case lists:keyfind(Channel, 1, State#server_st.channels) of
+        false ->
+            {error, no_such_channel};
 
-% Send message
+        {value, {ChName, Lst}} ->
+            case lists:member(From, Lst) of
+                false -> 
+                    {error, user_not_joined};
+                true -> 
+                    NewLst = lists:delete(From, Lst),
+                    NewChannels = 
+                        lists:keyreplace(Channel, 1, 
+                                        State#server_st.channels, 
+                                        {ChName, NewLst}),
+                    NewState = State#server_st{ channels = NewChannels } 
+            end
+    end.
+
+
+
+% Send message handler
+% Kanske ändra denna mer likt de andra handlers, nu returnerar du 
+% {response, {error, no_such_channel_msg_not_send}, State};
+handler(State, {message_send, Channel, Msg}, From) ->
+    case lists:keyfind(Channel, 1, State#server_st.channels) of
+    false ->
+        {response, {error, no_such_channel_msg_not_send}, State};
+
+    {value, {ChName, Lst}} ->
+        [send_message(H, Channel, From, Msg) || H <- Lst, H =/= From],
+        {response, ok, State} 
+    end.
+        
+
+% Helper function to Send message, structure from Lab instructions
 send_message(ToPid, Channel, FromPid, Msg) ->
     Ref = make_ref(),
     ToPid ! {request, self(), Ref, {message_receive, Channel, FromPid, Msg}},
     receive
-    {result, Ref, Data} -> ok
+    {result, Ref, _Data} -> ok
     end.
+
+
+
+
+
+% For everything else
+handler(State, _) ->
+        {response, {error, unknown_command}, State}. 
+
+
+
+
+
+
+
+
+
+
+
+
