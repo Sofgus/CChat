@@ -4,7 +4,7 @@
 
 % Record syntax for the structure of the servers state
 -record(server_st, {
-    channels % a list of {Channel, [Clients]}
+    channels % a list of channel and users(Clients): [{Channel, [Clients]}]
 }).
 % OBS! Se till att det verkligen är en lista av tuples!
 
@@ -60,18 +60,15 @@ stop(ServerAtom) ->
 
 
 
-
-
-
-
-
-
-
-
-
-
 % Join channel 
 handler(State, {join, Channel}) ->
+
+    Ch = existChannel(Channel, State)
+         
+        
+
+    
+
         {reply, okJoin, State}; 
 
 % Leave channel
@@ -85,5 +82,45 @@ handler(State, {message_send, Channel, Msg}) ->
 % For everything else
 handler(State, _) ->
         {reply, {error, unknown_command}, State}. 
+
+
+
+
+
+% helper function, checks if channels exists in the list. Returns true or false.
+existChannel(Key, State) ->
+    case lists:keymember(Key, 1, State) of
+        false -> createChannel(Key, State);
+        true -> joinChannel(Key, State)
+    end.
+
+% Using the Key(the channel the client gave us) and the servers State, 
+% we add a new channel to the record of the server and updates it State.
+% the function returns State.
+createChannel(Key, State) -> 
+    Channels = State#server_st.channels,
+    NewChannels = [{Key, []} | Channels],
+    NewState = State#server_st{ channels = NewChannels }.
+    % OBS GLÖM EJ ATT LÄGGA TILL USER I LISTAN
+
+joinChannel(Key, State) -> 
+    case lists:keyfind(Key, 1, State#server_st.channels) of
+        false -> 
+            undefined; 
+        {value, {ChName, Lst}} -> 
+            case lists:member(user, Lst) of
+                true -> 
+                    user_already_joined;
+                
+                false -> 
+                    NewChannels = 
+                        lists:keyreplace(Key, 1, 
+                                        State#server_st.channels, 
+                                        {ChName, user | Lst}),
+
+                    NewState = State#server_st{ channels = NewChannels }
+            end
+    end.
+
 
 
