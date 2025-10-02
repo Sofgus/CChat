@@ -27,7 +27,7 @@ start(ServerAtom) ->
     Pid = spawn(fun() -> loop(InitState, fun server:handler/2) end),
     register(ServerAtom, Pid),
     Pid.
-
+% OBS jag tror inte State är nånting just nu? eller är det InitState verkligen?
 loop(State, Handler) ->
     receive
         % This is what we get from client.erl handle-functions.
@@ -62,13 +62,27 @@ stop(ServerAtom) ->
 
 % Join channel 
 handler(State, {join, Channel, From}) ->
-
     NewState = existChannel(Channel, State, From),
     {reply, ok, NewState}.
 
 % Leave channel
-handler(State, {leave, Channel}) ->
-        {reply, okLeave, State}; 
+handler(State, {leave, Channel, From}) ->
+    case lists:keyfind(Channel, 1, State#server_st.channels) of
+        false ->
+            undefined;
+        {value, {ChName, Lst}} ->
+            case lists:member(From, Lst) of
+                false -> 
+                    user_not_joined;
+                true -> 
+                    NewLst = lists:delete(From, Lst),
+                    NewChannels = 
+                        lists:keyreplace(Channel, 1, 
+                                        State#server_st.channels, 
+                                        {ChName, NewLst}),
+                    NewState = State#server_st{ channels = NewChannels } 
+            end
+    end.
 
 % Send msg
 handler(State, {message_send, Channel, Msg}) ->
@@ -98,7 +112,7 @@ createChannel(Key, State, From) ->
     NewChannels = [{Key, [From]} | Channels],
     NewState = State#server_st{ channels = NewChannels }.
 
-
+% Using he Key(the channel the client gave us) and the servers State. 
 % keyreplace() returns [{ChName, Lst}] aka the whole shebang.
 % the function returns NewState.
 joinChannel(Key, State, From) -> 
@@ -109,7 +123,6 @@ joinChannel(Key, State, From) ->
             case lists:member(From, Lst) of
                 true -> 
                     user_already_joined;
-
                 false -> 
                     NewChannels = 
                         lists:keyreplace(Key, 1, 
