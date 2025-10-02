@@ -103,12 +103,12 @@ createChannel(Key, State) ->
     NewState = State#server_st{ channels = NewChannels }.
     % OBS GLÖM EJ ATT LÄGGA TILL USER I LISTAN
 
-joinChannel(Key, State) -> 
+joinChannel(Key, State, From) -> 
     case lists:keyfind(Key, 1, State#server_st.channels) of
         false -> 
             undefined; 
         {value, {ChName, Lst}} -> 
-            case lists:member(user, Lst) of
+            case lists:member(From, Lst) of
                 true -> 
                     user_already_joined;
                 
@@ -116,7 +116,7 @@ joinChannel(Key, State) ->
                     NewChannels = 
                         lists:keyreplace(Key, 1, 
                                         State#server_st.channels, 
-                                        {ChName, user | Lst}),
+                                        {ChName, From | Lst}),
 
                     NewState = State#server_st{ channels = NewChannels }
             end
