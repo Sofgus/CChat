@@ -88,21 +88,22 @@ handler(State, _) ->
 
 
 % helper function, checks if channels exists in the list. Returns true or false.
-existChannel(Key, State) ->
-    case lists:keymember(Key, 1, State) of
-        false -> createChannel(Key, State);
-        true -> joinChannel(Key, State)
+existChannel(Key, State, From) ->
+    case lists:keymember(Key, 1, State#server_st.channels) of
+        false -> createChannel(Key, State, From);
+        true -> joinChannel(Key, State, From)
     end.
 
 % Using the Key(the channel the client gave us) and the servers State, 
 % we add a new channel to the record of the server and updates it State.
 % the function returns State.
-createChannel(Key, State) -> 
+createChannel(Key, State, From) -> 
     Channels = State#server_st.channels,
-    NewChannels = [{Key, []} | Channels],
+    NewChannels = [{Key, [From]} | Channels],
     NewState = State#server_st{ channels = NewChannels }.
-    % OBS GLÖM EJ ATT LÄGGA TILL USER I LISTAN
 
+
+% keyreplace() returns [{ChName, Lst}] aka the whole shebang.
 joinChannel(Key, State, From) -> 
     case lists:keyfind(Key, 1, State#server_st.channels) of
         false -> 
