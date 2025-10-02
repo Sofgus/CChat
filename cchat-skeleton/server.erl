@@ -36,7 +36,7 @@ loop(State, Handler) ->
             % case-syntax unneccessary here..
             case Handler(State, Command) of
                 % "if" we get {response, NewState}..
-                {response, NewState} ->
+                {response, ok, NewState} ->
                     % sends message back to the client.erl handler and restarts loop.
                     From ! {reply, Ref},
                     loop(NewState, Handler)
@@ -61,15 +61,10 @@ stop(ServerAtom) ->
 
 
 % Join channel 
-handler(State, {join, Channel}) ->
+handler(State, {join, Channel, From}) ->
 
-    Ch = existChannel(Channel, State)
-         
-        
-
-    
-
-        {reply, okJoin, State}; 
+    NewState = existChannel(Channel, State, From),
+    {reply, ok, NewState}.
 
 % Leave channel
 handler(State, {leave, Channel}) ->
@@ -95,8 +90,9 @@ existChannel(Key, State, From) ->
     end.
 
 % Using the Key(the channel the client gave us) and the servers State, 
-% we add a new channel to the record of the server and updates it State.
-% the function returns State.
+% we add a new channel, and the user to that channel, 
+% to the record of the server and updates it State.
+% the function returns NewState.
 createChannel(Key, State, From) -> 
     Channels = State#server_st.channels,
     NewChannels = [{Key, [From]} | Channels],
@@ -104,6 +100,7 @@ createChannel(Key, State, From) ->
 
 
 % keyreplace() returns [{ChName, Lst}] aka the whole shebang.
+% the function returns NewState.
 joinChannel(Key, State, From) -> 
     case lists:keyfind(Key, 1, State#server_st.channels) of
         false -> 
@@ -112,7 +109,7 @@ joinChannel(Key, State, From) ->
             case lists:member(From, Lst) of
                 true -> 
                     user_already_joined;
-                
+
                 false -> 
                     NewChannels = 
                         lists:keyreplace(Key, 1, 
