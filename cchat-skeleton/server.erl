@@ -34,7 +34,7 @@ loop(State, Handler) ->
         {From, Ref, Command} ->
             % Using server.erl own handle-functions to compute logic.
             % case-syntax unneccessary here..
-            case Handler(State, Command) of
+            case Handler(State, Command, From) of
                 % "if" we get {response, NewState}..
                 {response, ok, NewState} ->
                     % sends message back to the client.erl handler and restarts loop.
@@ -61,12 +61,12 @@ stop(ServerAtom) ->
 
 
 % Join channel 
-handler(State, {join, Channel, From}) ->
+handler(State, {join, Channel}, From) ->
     NewState = existChannel(Channel, State, From),
     {reply, ok, NewState}.
 
 % Leave channel
-handler(State, {leave, Channel, From}) ->
+handler(State, {leave, Channel}, From) ->
     case lists:keyfind(Channel, 1, State#server_st.channels) of
         false ->
             undefined;
@@ -84,9 +84,21 @@ handler(State, {leave, Channel, From}) ->
             end
     end.
 
+
+
 % Send msg
-handler(State, {message_send, Channel, Msg}) ->
-        {reply, okMsgSend, State}; 
+handler(State, {message_send, Channel, Msg}, From) ->
+    case lists:keyfind(Channel, 1, State#server_st.channels) of
+    false ->
+        undefined;
+    {value, {ChName, Lst}} ->
+        [send_message(H, Channel, From, Msg) || H <- Lst, H =/= From]
+    end
+        {reply, okMsgSend, State}. 
+
+
+
+
 
 % For everything else
 handler(State, _) ->
@@ -135,3 +147,13 @@ joinChannel(Key, State, From) ->
 
 
 
+
+
+
+% Send message
+send_message(ToPid, Channel, FromPid, Msg) ->
+    Ref = make_ref(),
+    ToPid ! {request, self(), Ref, {message_receive, Channel, FromPid, Msg}},
+    receive
+    {result, Ref, Data} -> ok
+    end.
