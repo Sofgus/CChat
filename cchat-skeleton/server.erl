@@ -172,7 +172,7 @@ send_message(ToPid, Channel, FromPid, Msg) ->
 
 
 % For everything else
-handler(State, _) ->
+handler(State, _Unknown, _From) ->
         {response, {error, unknown_command}, State}. 
 
 
