@@ -50,6 +50,15 @@ handler(State, {leave, From}) ->
 
 
 
+% Send-Message-Handler for the channel.
+%
+handler(State, {message_send, Msg, self()}) ->
+
+    
+
+
+
+
 % //////////////////////////////////// Helper functions //////////////////////////////////// %
 
 

@@ -40,9 +40,7 @@ stop(ServerAtom) ->
 % Checks if the channel exists: if false --> Creates channel
 %                               if true  --> Sends a request to join that channel.
 %  
-handler(State, {join, Channel, From}) ->
-    
-                                             
+handler(State, {join, Channel, From}) ->                               
     case lists:member(Channel, State#server_st.channels) of
         false -> 
             channel:createChannel(Channel, From),

@@ -43,7 +43,9 @@ handle(St, {leave, Channel}) ->
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
-    % TODO: Implement this function
+    try genserver:request(Channel, {message_send, Msg, self()})
+
+
     % {reply, ok, St} ;
     {reply, {error, not_implemented, "message sending not implemented"}, St} ;
 
