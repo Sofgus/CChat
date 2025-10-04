@@ -42,16 +42,16 @@ stop(ServerAtom) ->
 %  
 handler(State, {join, Channel, From}) ->
     
-                                              The channel-process handles the joining. 
+                                             
     case lists:member(Channel, State#server_st.channels) of
         false -> 
             channel:createChannel(Channel, From),
             NewChannels = [Channel | State#server_st.channels],
             {reply, ok, State#server_st.channels = NewChannels};
-        
+
+        % The channel-process handles the joining.  
         true -> 
             try genserver:request(Channel, {join, From}) of
-                
                 user_already_joined ->
                     {reply, user_already_joined, State};
                 ok ->
