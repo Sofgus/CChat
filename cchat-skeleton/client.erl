@@ -28,13 +28,16 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 
 % Join channel
 handle(St, {join, Channel}) ->
-    % TODO: Implement this function
+    Server = St#client_st.server,
+    try genserver:request(Server, {join, Channel, self()}) of
+
     % {reply, ok, St} ;
     {reply, {error, not_implemented, "join not implemented"}, St} ;
 
 % Leave channel
 handle(St, {leave, Channel}) ->
-    % TODO: Implement this function
+    try genserver:request(Channel, {leave, self()}) of
+
     % {reply, ok, St} ;
     {reply, {error, not_implemented, "leave not implemented"}, St} ;
 
