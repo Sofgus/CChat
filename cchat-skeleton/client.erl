@@ -30,26 +30,47 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 handle(St, {join, Channel}) ->
     Server = St#client_st.server,
     try genserver:request(Server, {join, list_to_atom(Channel), self()}) of
-
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "join not implemented"}, St} ;
-
+        ok ->
+            {reply, ok, St};
+        user_already_joined ->
+            {reply, {error, user_already_joined, "The user has already joined the channel"}, St}
+        catch 
+            throw:timeout_error ->
+                {reply, {error, not_implemented, "Server is not responding"}, St};
+            error:badarg ->
+                {reply, {error, server_not_reached, "bad argument, server may not exist"}, St} 
+        end.
 % Leave channel
 handle(St, {leave, Channel}) ->
     try genserver:request(list_to_atom(Channel), {leave, self()}) of
+        ok ->
+            {reply, ok, St};
+        user_not_joined ->
+            {reply, {error, user_not_joined, "The user cannot leave a channel it has not joined"}, St}
+        catch
+            throw:timeout_error ->
+               {reply, {error, server_not_reached, "Channel is not responding"}, St};
+            error:badarg ->
+                {reply, {error, server_not_reached, "bad argument, channel may not exist"}, St} 
+        end. 
+     
 
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "leave not implemented"}, St} ;
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
     Nick = St#client_st.nick,
     try genserver:request(list_to_atom(Channel), {message_send, Msg, Nick, self()}) of
+        ok ->
+            {reply, ok, St};
+        user_not_joined ->
+            {reply, {error, user_not_joined, "User cannot send a message in channel when not joined"}, St}
+        catch
+            throw:timeout_error ->
+               {reply, {error, server_not_reached, "Channel is not responding"}, St};
+            error:badarg ->
+                {reply, {error, server_not_reached, "bad argument, channel may not exist"}, St} 
+        end. 
 
-
-
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "message sending not implemented"}, St} ;
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)

@@ -28,11 +28,15 @@ start(ServerAtom) ->
 % together with any other associated processes
 stop(ServerAtom) ->
     try genserver:request(ServerAtom, close_channels) of
-        ok -> ok;
+        ok -> ok
     catch
-
+        throw:timeout_error ->
+            server_not_reached;
+        error:badarg ->
+            server_not_reached
     end,
-    genserver:stop(ServerAtom).
+    genserver:stop(ServerAtom),
+    ok.
 
 
 
@@ -47,11 +51,9 @@ handler(State, close_channels) ->
 
 
 close_channel(Channel) -> 
-    try genserver:stop(Channel) of
-        ok -> ok
-    catch
-    
-    end.
+    genserver:stop(Channel),
+    ok.
+  
 
 
 
@@ -73,6 +75,11 @@ handler(State, {join, Channel, From}) ->
                     {reply, user_already_joined, State};
                 ok ->
                     {reply, ok, State}
+            catch
+                throw:timeout_error ->
+                    {reply, server_not_reached, State};
+                error:badarg ->
+                    {reply, server_not_reached, State}
         end.
                 
 
