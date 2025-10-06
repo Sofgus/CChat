@@ -42,7 +42,7 @@ handler(State, {join, From}) ->
 handler(State, {leave, From}) ->
     case is_member(State, From) of
         false ->
-            {reply, user_not_member_of_channel, State};
+            {reply, user_not_joined, State};
         true ->
             NewState = remove_user(State, From),
             {reply, ok, NewState}
@@ -52,9 +52,17 @@ handler(State, {leave, From}) ->
 
 % Send-Message-Handler for the channel.
 %
-handler(State, {message_send, Msg, self()}) ->
+handler(State, {message_send, Msg, From}) ->
+    case is_member(State, From) of
+        false ->
+            {reply, user_not_joined, State};
 
-    
+        true ->
+            send_msg_process(State, Msg, From),
+            {reply, ok, St};
+
+
+
 
 
 
@@ -76,6 +84,36 @@ remove_user(State, User) ->
     Users = lists:delete(User, State#channel_st.user),
     State#channel_st{user = Users}.
 
-% Just made this to avoid code-duplication in handler-functions.
+% Just made this to avoid code-duplication in Handler-functions.
+% Returns true or false.
 is_member(State, User) ->
     lists:member(User, State#channel_st.user).
+
+
+% DUBBELKOLLA DENNA, RETURNERAR DEN NÅTT?
+send_msg_process(State, Msg, Sender) ->
+    Users = State#channel_st.user,
+    ChName = State#channel_st.chName,
+    Receivers = lists:delete(Sender, Users),
+    
+    spawn( fun() -> iterate_through_users(ChName, Msg, Receivers, Sender) end).
+
+    
+
+
+
+iterate_through_users(ChName, Msg, Receivers, Sender) ->
+    lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Sender, Receiver) end, Receivers),
+
+
+
+send_msg_to_clients(ChName, Msg, Sender, Receiver) ->
+    try genserver:request(Receiver, {message_receive, Channel, Nick, Msg}) of
+
+        ok -> ok
+    catch
+        
+
+
+    % detta ska vi skicka, för att det är det klienten tar emot
+    % {message_receive, Channel, Nick, Msg}

@@ -43,7 +43,8 @@ handle(St, {leave, Channel}) ->
 
 % Sending message (from GUI, to channel)
 handle(St, {message_send, Channel, Msg}) ->
-    try genserver:request(Channel, {message_send, Msg, self()})
+    try genserver:request(Channel, {message_send, Msg, self()}) of
+        
 
 
     % {reply, ok, St} ;

@@ -68,6 +68,12 @@ handler(State, {join, Channel, From}) ->
 
 
 
+
+
+
+
+
+
 % Send message handler
 % Kanske ändra denna mer likt de andra handlers, nu returnerar du 
 % {response, {error, no_such_channel_msg_not_send}, State};
