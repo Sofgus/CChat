@@ -90,7 +90,9 @@ is_member(State, User) ->
     lists:member(User, State#channel_st.user).
 
 
-% Spawns new process for not overflowing the channel with messages. 
+% Spawns new process for not overflowing the channel with messages.
+% Removes the sender from the list of users since we do not want to send the msg
+% to oneself. 
 % Returns ok.
 send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
@@ -109,8 +111,9 @@ iterate_through_users(ChName, Msg, Receivers, Nick) ->
 
 
 % Basically a wrapper because we needed the Receiver-argument for genserver:request.
+% atom_to_list converts ChName from atom to String.
 send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
-    try genserver:request(Receiver, {message_receive, ChName, Nick, Msg}) of
+    try genserver:request(Receiver, {message_receive, atom_to_list(ChName), Nick, Msg}) of
 
         ok -> ok
     catch

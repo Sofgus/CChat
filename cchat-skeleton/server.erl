@@ -61,45 +61,6 @@ handler(State, {join, Channel, From}) ->
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-% Send message handler
-% Kanske ändra denna mer likt de andra handlers, nu returnerar du 
-% {response, {error, no_such_channel_msg_not_send}, State};
-handler(State, {message_send, Channel, Msg}, From) ->
-    case lists:keyfind(Channel, 1, State#server_st.channels) of
-    false ->
-        {response, {error, no_such_channel_msg_not_send}, State};
-
-    {value, {ChName, Lst}} ->
-        [send_message(H, Channel, From, Msg) || H <- Lst, H =/= From],
-        {response, ok, State} 
-    end.
-        
-
-% Helper function to Send message, structure from Lab instructions
-send_message(ToPid, Channel, FromPid, Msg) ->
-    Ref = make_ref(),
-    ToPid ! {request, self(), Ref, {message_receive, Channel, FromPid, Msg}},
-    receive
-    {result, Ref, _Data} -> ok
-    end.
-
-
-
-
-
 % For everything else
 handler(State, _Unknown, _From) ->
         {response, {error, unknown_command}, State}. 
