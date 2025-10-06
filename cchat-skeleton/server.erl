@@ -1,5 +1,5 @@
 -module(server).
--export([start/1,stop/1]).
+-export([start/1,stop/1, handler/2]).
 
 
 % Record syntax for the structure of the servers state
@@ -47,15 +47,7 @@ stop(ServerAtom) ->
 handler(State, close_channels) ->
     Channels = State#server_st.channels,
     lists:foreach( fun (Channel) -> close_channel(Channel) end, Channels),
-    {reply, ok, State#server_st{channels = []}}.
-
-
-close_channel(Channel) -> 
-    genserver:stop(Channel),
-    ok.
-  
-
-
+    {reply, ok, State#server_st{channels = []}};
 
 % Join-Channel-Handler for the server.
 % Checks if the channel exists: if false --> Creates channel
@@ -80,23 +72,28 @@ handler(State, {join, Channel, From}) ->
                     {reply, server_not_reached, State};
                 error:badarg ->
                     {reply, server_not_reached, State}
-        end.
+            end
+        end;
                 
-
-
-                
-
-
 
 % For everything else
 handler(State, _Unknown) ->
-        {response, unknown_command, State}. 
+        {reply, unknown_command, State}. 
 
 
 
 
 
 
+
+% //////////////////////////////////// Helper functions //////////////////////////////////// %
+
+
+
+close_channel(Channel) -> 
+    genserver:stop(Channel),
+    ok.
+  
 
 
 

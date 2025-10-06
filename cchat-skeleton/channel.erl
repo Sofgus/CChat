@@ -36,9 +36,7 @@ handler(State, {join, From}) ->
             {reply, ok, NewState};
         true ->
             {reply, user_already_joined, State}
-    end.
-
-
+    end;
 
 % Leave-Channel-Handler for the channel.
 % Checks if the one who sent the request is a already a member of the channel or not.
@@ -51,9 +49,7 @@ handler(State, {leave, From}) ->
         true ->
             NewState = remove_user(State, From),
             {reply, ok, NewState}
-    end.
-
-
+    end;
 
 % Send-Message-Handler for the channel.
 %
@@ -63,7 +59,8 @@ handler(State, {message_send, Msg, Nick, From}) ->
             {reply, user_not_joined, State};
         true ->
             send_msg_process(State, Msg, Nick, From),
-            {reply, ok, State};
+            {reply, ok, State}
+    end.
 
 
 

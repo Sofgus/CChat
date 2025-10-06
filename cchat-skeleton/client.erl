@@ -36,10 +36,11 @@ handle(St, {join, Channel}) ->
             {reply, {error, user_already_joined, "The user has already joined the channel"}, St}
         catch 
             throw:timeout_error ->
-                {reply, {error, not_implemented, "Server is not responding"}, St};
+                {reply, {error, server_not_reached, "Server is not responding"}, St};
             error:badarg ->
                 {reply, {error, server_not_reached, "bad argument, server may not exist"}, St} 
-        end.
+        end;
+
 % Leave channel
 handle(St, {leave, Channel}) ->
     try genserver:request(list_to_atom(Channel), {leave, self()}) of
@@ -52,7 +53,7 @@ handle(St, {leave, Channel}) ->
                {reply, {error, server_not_reached, "Channel is not responding"}, St};
             error:badarg ->
                 {reply, {error, server_not_reached, "bad argument, channel may not exist"}, St} 
-        end. 
+        end; 
      
 
 
@@ -69,7 +70,7 @@ handle(St, {message_send, Channel, Msg}) ->
                {reply, {error, server_not_reached, "Channel is not responding"}, St};
             error:badarg ->
                 {reply, {error, server_not_reached, "bad argument, channel may not exist"}, St} 
-        end. 
+        end; 
 
 
 % This case is only relevant for the distinction assignment!
