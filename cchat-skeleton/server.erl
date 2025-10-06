@@ -27,12 +27,31 @@ start(ServerAtom) ->
 % Stop the server process registered to the given name,
 % together with any other associated processes
 stop(ServerAtom) ->
-    % TODO Implement function
-    % Return ok
+    try genserver:request(ServerAtom, close_channels) of
+        ok -> ok;
+    catch
+
+    end,
+    genserver:stop(ServerAtom).
+
+
+
+
+% Close-Channel-Handler for the server. 
+% Looping through the servers state (list of channels) and
+% closes each one with foreach loop
+handler(State, close_channels) ->
+    Channels = State#server_st.channels,
+    lists:foreach( fun (Channel) -> close_channel(Channel) end, Channels),
+    {reply, ok, State#server_st{channels = []}}.
+
+
+close_channel(Channel) -> 
+    try genserver:stop(Channel) of
+        ok -> ok
+    catch
     
-
-
-
+    end.
 
 
 
@@ -45,7 +64,7 @@ handler(State, {join, Channel, From}) ->
         false -> 
             channel:createChannel(Channel, From),
             NewChannels = [Channel | State#server_st.channels],
-            {reply, ok, State#server_st.channels = NewChannels};
+            {reply, ok, State#server_st{channels = NewChannels}};
 
         % The channel-process handles the joining.  
         true -> 

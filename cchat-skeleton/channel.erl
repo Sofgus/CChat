@@ -56,7 +56,6 @@ handler(State, {message_send, Msg, Nick, From}) ->
     case is_member(State, From) of
         false ->
             {reply, user_not_joined, State};
-
         true ->
             send_msg_process(State, Msg, Nick, From),
             {reply, ok, State};
@@ -90,6 +89,13 @@ is_member(State, User) ->
     lists:member(User, State#channel_st.user).
 
 
+
+
+
+
+
+
+
 % Spawns new process for not overflowing the channel with messages.
 % Removes the sender from the list of users since we do not want to send the msg
 % to oneself. 
@@ -101,9 +107,6 @@ send_msg_process(State, Msg, Nick, Sender) ->
     
     spawn( fun() -> iterate_through_users(ChName, Msg, Receivers, Nick) end),
     ok.
-
-    
-
 
 % Sending the message to everyone registered in the channel with foreach.
 iterate_through_users(ChName, Msg, Receivers, Nick) ->
@@ -118,7 +121,3 @@ send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
         ok -> ok
     catch
         
-
-
-    % detta ska vi skicka, för att det är det klienten tar emot
-    % {message_receive, Channel, Nick, Msg}
