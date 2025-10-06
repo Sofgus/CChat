@@ -1,3 +1,8 @@
+-module(channel).
+-export([handler/2, createChannel/2]).
+
+
+
 % The channels state, a registered name and a list of all users belonging to the channel.
 -record( channel_st, {
     chName,
@@ -10,13 +15,13 @@
 init_state(ChName, UserPid) ->
     #channel_st{
         chName = ChName, 
-        user = UserPid
+        user = [UserPid]
     }.
 
 
 % Using genserver:start/3, a Pid is returned for a new channel process.
 createChannel(Channel, UserPid) -> 
-    genserver:start(Channel, init_state(Channel, UserPid), fun channel:handler/2 )
+    genserver:start(Channel, init_state(Channel, UserPid), fun channel:handler/2).
 
 
 
@@ -120,4 +125,5 @@ send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
 
         ok -> ok
     catch
-        
+        _:_ -> ok
+    end.

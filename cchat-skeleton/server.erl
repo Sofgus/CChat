@@ -73,6 +73,7 @@ handler(State, {join, Channel, From}) ->
                     {reply, user_already_joined, State};
                 ok ->
                     {reply, ok, State}
+        end.
                 
 
 
@@ -81,8 +82,8 @@ handler(State, {join, Channel, From}) ->
 
 
 % For everything else
-handler(State, _Unknown, _From) ->
-        {response, {error, unknown_command}, State}. 
+handler(State, _Unknown) ->
+        {response, unknown_command, State}. 
 
 
 
