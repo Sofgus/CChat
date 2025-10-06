@@ -52,14 +52,14 @@ handler(State, {leave, From}) ->
 
 % Send-Message-Handler for the channel.
 %
-handler(State, {message_send, Msg, From}) ->
+handler(State, {message_send, Msg, Nick, From}) ->
     case is_member(State, From) of
         false ->
             {reply, user_not_joined, State};
 
         true ->
-            send_msg_process(State, Msg, From),
-            {reply, ok, St};
+            send_msg_process(State, Msg, Nick, From),
+            {reply, ok, State};
 
 
 
@@ -90,25 +90,27 @@ is_member(State, User) ->
     lists:member(User, State#channel_st.user).
 
 
-% DUBBELKOLLA DENNA, RETURNERAR DEN NÅTT?
-send_msg_process(State, Msg, Sender) ->
+% Spawns new process for not overflowing the channel with messages. 
+% Returns ok.
+send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
     ChName = State#channel_st.chName,
     Receivers = lists:delete(Sender, Users),
     
-    spawn( fun() -> iterate_through_users(ChName, Msg, Receivers, Sender) end).
+    spawn( fun() -> iterate_through_users(ChName, Msg, Receivers, Nick) end),
+    ok.
 
     
 
 
+% Sending the message to everyone registered in the channel with foreach.
+iterate_through_users(ChName, Msg, Receivers, Nick) ->
+    lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Nick, Receiver) end, Receivers).
 
-iterate_through_users(ChName, Msg, Receivers, Sender) ->
-    lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Sender, Receiver) end, Receivers),
 
-
-
-send_msg_to_clients(ChName, Msg, Sender, Receiver) ->
-    try genserver:request(Receiver, {message_receive, Channel, Nick, Msg}) of
+% Basically a wrapper because we needed the Receiver-argument for genserver:request.
+send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
+    try genserver:request(Receiver, {message_receive, ChName, Nick, Msg}) of
 
         ok -> ok
     catch
