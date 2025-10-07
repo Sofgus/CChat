@@ -89,7 +89,7 @@ handler(State, _Unknown) ->
 % //////////////////////////////////// Helper functions //////////////////////////////////// %
 
 
-
+% Helper function for Close-Channel-Handler, closes a process.
 close_channel(Channel) -> 
     genserver:stop(Channel),
     ok.

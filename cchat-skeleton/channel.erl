@@ -40,7 +40,7 @@ handler(State, {join, From}) ->
 
 % Leave-Channel-Handler for the channel.
 % Checks if the one who sent the request is a already a member of the channel or not.
-%                       if false --> The handler returns "user_not_member_of_channel".
+%                       if false --> The handler returns "user_not_joined".
 %                       if true  --> The user gets deleted from the channel.
 handler(State, {leave, From}) ->
     case is_member(State, From) of
@@ -73,7 +73,7 @@ handler(State, {message_send, Msg, Nick, From}) ->
 
 % Helper function to Join-Channel-Handler.
 % Copies the list to variable Users. 
-% List comprehension to add the new user to Users.
+% List construction to add the new user to Users.
 add_user(State, User) ->
     Users = State#channel_st.user,
     State#channel_st{user = [User | Users]}.
@@ -98,7 +98,7 @@ is_member(State, User) ->
 
 
 
-% Spawns new process for not overflowing the channel with messages.
+% Spawns new process for not blocking the channel.
 % Removes the sender from the list of users since we do not want to send the msg
 % to oneself. 
 % Returns ok.
@@ -111,12 +111,14 @@ send_msg_process(State, Msg, Nick, Sender) ->
     ok.
 
 % Sending the message to everyone registered in the channel with foreach.
-% Since its a "simple" process (no event loop), the process dies after code execution.
+% Since its a "simple" process (no event loop), the process dies after code execution
+% and "leaves the channel alone".
 iterate_through_users(ChName, Msg, Receivers, Nick) ->
     lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Nick, Receiver) end, Receivers).
 
 
-% Basically a wrapper because we needed the Receiver-argument for genserver:request.
+% Basically a wrapper because we needed the Receiver-argument for genserver:request, 
+% and to make repeated genserver:request.
 % atom_to_list converts ChName from atom to String.
 send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
     try genserver:request(Receiver, {message_receive, atom_to_list(ChName), Nick, Msg}) of
