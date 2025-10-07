@@ -111,6 +111,7 @@ send_msg_process(State, Msg, Nick, Sender) ->
     ok.
 
 % Sending the message to everyone registered in the channel with foreach.
+% Since its a "simple" process (no event loop), the process dies after code execution.
 iterate_through_users(ChName, Msg, Receivers, Nick) ->
     lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Nick, Receiver) end, Receivers).
 
@@ -122,5 +123,6 @@ send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
 
         ok -> ok
     catch
-        _:_ -> ok
+        throw:timeout_error ->
+            no_response_from_client
     end.
