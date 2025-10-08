@@ -19,7 +19,7 @@ init_state(ChName, UserPid) ->
     }.
 
 
-% Using genserver:start/3 to start a new process for a channel.
+% Using genserver:start to start a new process for a channel.
 % A Pid is returned for a new channel process.
 createChannel(Channel, UserPid) -> 
     genserver:start(Channel, init_state(Channel, UserPid), fun channel:handler/2).
