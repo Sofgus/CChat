@@ -133,13 +133,14 @@ spawn_msg_to_client(ChName, Msg, Nick, Receiver) ->
 
 
 % Helper function to spawn_msg_to_client.
-% Sending the message to a client.
+% Sending the message to a client with genserver:request since
+% we need to handle the timeout:error.
 send_msg_to_client(ChName, Msg, Nick, Receiver) ->
     try genserver:request(Receiver, {message_receive, atom_to_list(ChName), Nick, Msg} ) of
         ok -> ok
     catch
         throw:timeout_error ->
-            no_response
+            no_response_from_client
         end.
 
 
