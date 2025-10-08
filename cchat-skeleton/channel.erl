@@ -98,10 +98,8 @@ is_member(State, User) ->
 
 
 
-% Spawns new process for not blocking the channel.
-% Removes the sender from the list of users since we do not want to send the msg
-% to oneself. 
-% Returns ok.
+% Spawns a new process so we are not blocking the channel.
+% Removes the sender from the list of users since we do not want to send the msg to the sender. 
 send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
     ChName = State#channel_st.chName,
