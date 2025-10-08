@@ -2,7 +2,7 @@
 -export([start/1,stop/1, handler/2]).
 
 
-% Record syntax for the structure of the servers state
+% Record syntax for the structure of the servers state.
 -record(server_st, {
     channels % a list of channels: [channel1, channel2, etc.]
 }).
@@ -16,7 +16,7 @@ init_state() ->
     }.
 
 
-% Start a new server process with the given name
+% Start a new server process with the given name.
 % Do not change the signature of this function.
 start(ServerAtom) ->
     genserver:start(ServerAtom, init_state(), fun server:handler/2).
@@ -26,6 +26,7 @@ start(ServerAtom) ->
 
 % Stop the server process registered to the given name,
 % together with any other associated processes
+% First it stops all channels(processes) in the Servers state(the list of channels), then it stops itself.
 stop(ServerAtom) ->
     try genserver:request(ServerAtom, close_channels) of
         ok -> ok
@@ -43,15 +44,15 @@ stop(ServerAtom) ->
 
 % Close-Channel-Handler for the server. 
 % Looping through the servers state (list of channels) and
-% closes each one with foreach loop
+% closes each one using the "foreach loop".
 handler(State, close_channels) ->
     Channels = State#server_st.channels,
     lists:foreach( fun (Channel) -> close_channel(Channel) end, Channels),
     {reply, ok, State#server_st{channels = []}};
 
 % Join-Channel-Handler for the server.
-% Checks if the channel exists: if false --> Creates channel
-%                               if true  --> Sends a request to join that channel.
+% Checks if the channel exists: if false --> Creates channel (channel.erl creates a new process for the channel)
+%                               if true  --> Sends a request to the channel-process to join that channel.
 %  
 handler(State, {join, Channel, From}) ->                               
     case lists:member(Channel, State#server_st.channels) of
@@ -77,7 +78,7 @@ handler(State, {join, Channel, From}) ->
                 
 
 % For everything else
-handler(State, _Unknown) ->
+handler(State, _) ->
         {reply, unknown_command, State}. 
 
 

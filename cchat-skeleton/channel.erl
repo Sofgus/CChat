@@ -19,14 +19,15 @@ init_state(ChName, UserPid) ->
     }.
 
 
-% Using genserver:start/3, a Pid is returned for a new channel process.
+% Using genserver:start/3 to start a new process for a channel.
+% A Pid is returned for a new channel process.
 createChannel(Channel, UserPid) -> 
     genserver:start(Channel, init_state(Channel, UserPid), fun channel:handler/2).
 
 
 
 % Join-Channel-Handler for the channel. 
-% Checks if the one who sent the request is already a user or not.
+% Checks if the one who sent the join-request to the channel is already a user or not.
 %                       if false --> The user is added to the channel.
 %                       if true  --> The handler returns "user_already_joined".
 handler(State, {join, From}) ->
@@ -52,7 +53,10 @@ handler(State, {leave, From}) ->
     end;
 
 % Send-Message-Handler for the channel.
-%
+% Checks if the one who sent the request is indeed a member of the channel or not.
+%                          if false --> The handler returns "user_not_joined".
+%                          if true  --> The function send_msg_process creates a new process
+%                                       for sending the message to everyone in the channel.
 handler(State, {message_send, Msg, Nick, From}) ->
     case is_member(State, From) of
         false ->
@@ -80,12 +84,13 @@ add_user(State, User) ->
 
 % Helper function to Leave-Channel-Handler.
 % Copies the list to variable Users.
-% Deletes the user from the Users. Updates the channel state.
+% Deletes the user from the list Users. 
+% Updates the channel state.
 remove_user(State, User) ->
     Users = lists:delete(User, State#channel_st.user),
     State#channel_st{user = Users}.
 
-% Just made this to avoid code-duplication in Handler-functions.
+% Just made this to avoid code-duplication in Handler-functions..lol.
 % Returns true or false.
 is_member(State, User) ->
     lists:member(User, State#channel_st.user).
@@ -98,8 +103,11 @@ is_member(State, User) ->
 
 
 
-% Spawns a new process so we are not blocking the channel.
-% Removes the sender from the list of users since we do not want to send the msg to the sender. 
+% Spawns a new process in charge of sending a message to everyone in the channel.
+% We are spawning a new process so we are not blocking the channel.
+% Note that this becomes a asynchronous call, since when we are spawning a new process the channel
+% does not wait for a response. So now the channel is free/not blocked. 
+% Removes the sender from the list of users since we do not want to send the msg back to the sender. 
 send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
     ChName = State#channel_st.chName,
@@ -108,16 +116,15 @@ send_msg_process(State, Msg, Nick, Sender) ->
     spawn( fun() -> iterate_through_users(ChName, Msg, Receivers, Nick) end),
     ok.
 
-% Sending the message to everyone registered in the channel with foreach.
-% Since its a "simple" process (no event loop), the process dies after code execution
-% and "leaves the channel alone".
+% Sending the message to everyone registered in the channel using foreach.
+% Since its part of a "simple" process (no event loop), the process dies after code execution
+% and "leaves the channel alone", free to continue handling new requests.
 iterate_through_users(ChName, Msg, Receivers, Nick) ->
     lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Nick, Receiver) end, Receivers).
 
 
 % Basically a wrapper because we needed the Receiver-argument for genserver:request, 
-% and to make repeated genserver:request.
-% atom_to_list converts ChName from atom to String.
+% which allows for repeated syncronous requests to each receiver.
 send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
     try genserver:request(Receiver, {message_receive, atom_to_list(ChName), Nick, Msg}) of
 

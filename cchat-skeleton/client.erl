@@ -26,6 +26,16 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 %   - Data is what is sent to GUI, either the atom `ok` or a tuple {error, Atom, "Error message"}
 %   - NewState is the updated state of the client
 
+
+% The whole client.erl is basically a proxy between the GUI and the server/channels. 
+% With that said, Join Channel, Leave Channel and Sending message works the same way.
+% They just pass along the message from the GUI to the appropriate receiver(server or channel).
+% Server/channel are responsible to evaluate the message sent, the client just pass along the status of 
+% the evaluation to the GUI when a message has been evaluated.
+
+% In this way, the client process uses synchronous communication with the server/channels,
+% since the client are waiting for a response before continuing.
+
 % Join channel
 handle(St, {join, Channel}) ->
     Server = St#client_st.server,
