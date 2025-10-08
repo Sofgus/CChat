@@ -98,40 +98,48 @@ is_member(State, User) ->
 
 
 
-
-
-
-
-
 % Spawns a new process in charge of sending a message to everyone in the channel.
-% We are spawning a new process so we are not blocking the channel.
-% Note that this becomes a asynchronous call, since when we are spawning a new process the channel
-% does not wait for a response. So now the channel is free/not blocked. 
-% Removes the sender from the list of users since we do not want to send the msg back to the sender. 
+% We are spawning a new process for every client so we are not blocking the channel.
+% Note that this becomes an asynchronous call, since when we are spawning a new process
+% for every client and the channel does not wait for a response. 
+% So the channel becomes free/not blocked by message sending. 
 send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
     ChName = State#channel_st.chName,
-    Receivers = lists:delete(Sender, Users),
-    
-    spawn( fun() -> iterate_through_users(ChName, Msg, Receivers, Nick) end),
+    Receivers = get_receivers(Users, Sender),
+
+    iterate_through_users(ChName, Msg, Receivers, Nick),
     ok.
 
+
+% Helper function to send_msg_process.
+% Deletes the one sending the message in the list of receivers of a message.
+% The sender does not need it's own message.
+get_receivers(Users, Sender) ->
+    lists:delete(Sender, Users).
+
+
+
 % Sending the message to everyone registered in the channel using foreach.
-% Since its part of a "simple" process (no event loop), the process dies after code execution
-% and "leaves the channel alone", free to continue handling new requests.
+% With lists:foreach and spawn_msg_to_client we spawn a new process for every client, delivering the message.
 iterate_through_users(ChName, Msg, Receivers, Nick) ->
-    lists:foreach( fun(Receiver) -> send_msg_to_clients(ChName, Msg, Nick, Receiver) end, Receivers).
+    lists:foreach( fun(Receiver) -> spawn_msg_to_client(ChName, Msg, Nick, Receiver) end, Receivers).
 
 
-% Basically a wrapper because we needed the Receiver-argument for genserver:request, 
-% which allows for repeated syncronous requests to each receiver.
-send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
-    try genserver:request(Receiver, {message_receive, atom_to_list(ChName), Nick, Msg}) of
+% Helper function to iterate_through_users.
+% Spawns a process to send a message to a client.
+spawn_msg_to_client(ChName, Msg, Nick, Receiver) ->
+    spawn(fun() -> send_msg_to_client(ChName, Msg, Nick, Receiver) end).
 
+
+% Helper function to spawn_msg_to_client.
+% Sending the message to a client.
+send_msg_to_client(ChName, Msg, Nick, Receiver) ->
+    try genserver:request(Receiver, {message_receive, atom_to_list(ChName), Nick, Msg} ) of
         ok -> ok
     catch
         throw:timeout_error ->
-            no_response_from_client
-    end.
+            no_response
+        end.
 
 
