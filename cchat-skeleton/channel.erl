@@ -102,7 +102,7 @@ is_member(State, User) ->
 % We are spawning a new process for every client so we are not blocking the channel.
 % Note that this becomes an asynchronous call, since when we are spawning a new process
 % for every client and the channel does not wait for a response. 
-% So the channel becomes free/not blocked by message sending. 
+% So the channel becomes free to handle other types of requests. 
 send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
     ChName = State#channel_st.chName,
@@ -114,7 +114,7 @@ send_msg_process(State, Msg, Nick, Sender) ->
 
 % Helper function to send_msg_process.
 % Deletes the one sending the message in the list of receivers of a message.
-% The sender does not need it's own message.
+% The sender does not need it's own message, obviously.
 get_receivers(Users, Sender) ->
     lists:delete(Sender, Users).
 
