@@ -133,3 +133,5 @@ send_msg_to_clients(ChName, Msg, Nick, Receiver) ->
         throw:timeout_error ->
             no_response_from_client
     end.
+
+
