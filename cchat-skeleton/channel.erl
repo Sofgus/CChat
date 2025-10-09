@@ -101,7 +101,7 @@ is_member(State, User) ->
 % Spawns a new process in charge of sending a message to everyone in the channel.
 % We are spawning a new process for every client so we are not blocking the channel.
 % Note that this becomes an asynchronous call, since when we are spawning a new process
-% for every client and the channel does not wait for a response. 
+% for every client and the "channel" (actually the process) does not wait for a response. 
 % So the channel becomes free to handle other types of requests. 
 send_msg_process(State, Msg, Nick, Sender) ->
     Users = State#channel_st.user,
